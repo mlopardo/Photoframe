@@ -3,8 +3,12 @@ name: Android CI
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -38,3 +42,20 @@ jobs:
         with:
           name: photoframe-debug
           path: app/build/outputs/apk/debug/*.apk
+
+      # Al empujar una etiqueta vX.Y.Z, el APK se publica solo como release.
+      # Asi no hay que subir el archivo a mano desde el navegador.
+      - name: Preparar APK con nombre de version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: cp app/build/outputs/apk/debug/app-debug.apk photoframe-${{ github.ref_name }}.apk
+
+      - name: Publicar release con el APK
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          files: photoframe-${{ github.ref_name }}.apk
+          body: |
+            APK de depuracion generado por el CI (build ${{ github.run_number }}).
+            Instalacion en la tablet:
+            adb install -r photoframe-${{ github.ref_name }}.apk
