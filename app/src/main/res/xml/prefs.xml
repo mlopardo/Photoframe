@@ -6,7 +6,7 @@
         <SeekBarPreference
             app:defaultValue="30"
             app:key="interval_sec"
-            app:max="300"
+            android:max="300"
             android:min="5"
             app:seekBarIncrement="5"
             app:showSeekBarValue="true"
@@ -15,7 +15,7 @@
         <SeekBarPreference
             app:defaultValue="1500"
             app:key="fade_ms"
-            app:max="3000"
+            android:max="3000"
             android:min="0"
             app:seekBarIncrement="250"
             app:showSeekBarValue="true"
