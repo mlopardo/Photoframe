@@ -1,0 +1,16 @@
+# Normalización de finales de línea (evita que CRLF de Windows rompa scripts en el CI Linux).
+* text=auto eol=lf
+
+# Scripts de Windows: CRLF.
+*.bat text eol=crlf
+
+# Gradle wrapper: SIEMPRE LF (si no, ./gradlew falla en el runner Linux del CI).
+gradlew text eol=lf
+
+# Binarios que no deben tocarse.
+*.jar binary
+*.png binary
+*.jpg binary
+*.webp binary
+*.keystore binary
+*.jks binary

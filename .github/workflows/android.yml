@@ -19,11 +19,8 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v3
 
-      # Genera el wrapper si el repo todavia no lo tiene versionado
-      # (Android Studio lo crea en el primer sync).
-      - name: Generar Gradle wrapper si falta
-        run: '[ -f ./gradlew ] || gradle wrapper --gradle-version 8.13'
-
+      # El wrapper esta versionado en el repo (gradle/wrapper/), asi que el CI
+      # usa siempre la misma version de Gradle que la maquina de desarrollo.
       - name: Hacer ejecutable el wrapper
         run: chmod +x ./gradlew
 
