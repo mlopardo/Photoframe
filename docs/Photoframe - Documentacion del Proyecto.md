@@ -6,8 +6,8 @@
 | **`applicationId`** | `com.zambiotica.photoframe` (permanente) |
 | **Licencia** | GPL-3.0 · repo público `mlopardo/Photoframe` |
 | **SDK** | `minSdk 25` · `compileSdk` / `targetSdk 36` |
-| **Estado** | M1 — MVP escrito, pendiente de probar en la TabZambiótica |
-| **Versión del documento** | 0.1.0 |
+| **Estado** | M1 — probado en la TabZambiótica el 2026-09-17; v0.1.1 corrige lo observado |
+| **Versión del documento** | 0.1.1 |
 | **Última actualización** | 2026-09-17 |
 | **Líder técnico** | Apu (asesor Android) + Mariano |
 
@@ -59,7 +59,10 @@ son las que cubre el CI con tests de JVM. El resto se verifica en el dispositivo
 ## 4. Interfaz con Home Assistant (proyecto P2)
 
 - **Carpeta:** `/sdcard/Portarretrato/`, con el permiso otorgado por `pm grant`.
-- **Recarga:** `am start -n com.zambiotica.photoframe/.MainActivity --ez reload true`.
+- **Recarga:** `am start -n com.zambiotica.photoframe/.MainActivity --ez reload true -f 0x04000000`.
+  La bandera `CLEAR_TOP` es obligatoria: sin ella, con la app ya abierta, Android solo trae la
+  tarea al frente y el extra nunca llega a `onNewIntent` (comprobado en la Tab el 2026-09-17).
+  Red de seguridad: la app recalcula la huella de la carpeta al volver al frente y recarga si cambió.
 - **Pantalla:** la maneja HA con `input keyevent 224` y `223`. La app no los pisa: mantiene la
   pantalla encendida solo mientras está al frente.
 - **P2 debe** subir a una carpeta temporal, reemplazar la carpeta y recién después recargar.
@@ -126,6 +129,27 @@ de hardware, y no redecodificando ni redibujando el bitmap.
 **Consecuencia:** el recorte del efecto es fijo (8% de zoom). Queda medir el rendimiento real en la
 Tab en M1.
 
+### ADR-008 — Fondo difuminado con desenfoque real
+**Estado:** Aceptado · **2026-09-17** (reemplaza la primera implementación)
+El fondo se arma con una miniatura de 160 px, un desenfoque de caja de radio 6 en dos pasadas
+y un oscurecido al 55%.
+**Motivo:** la primera versión estiraba una miniatura de 48 px sin desenfocar. En la Tab se veía
+como un recorte ampliado y pixelado, sobre todo con fotos verticales, donde el fondo ocupa media
+pantalla (reportado por Mariano en la primera prueba real).
+**Costo:** el desenfoque corre sobre ~16.000 píxeles; es despreciable incluso en la Tab 2. El
+algoritmo está verificado contra una implementación de referencia (diferencia 0 en 6 formas
+distintas, incluidos bordes de 2×2 y 200×3).
+
+### ADR-009 — El marco se protege de los toques accidentales
+**Estado:** Aceptado · **2026-09-17**
+Se abandona `GestureDetector`: los toques se manejan a mano. Se ignoran los toques durante 2 s
+después de que la app vuelve al frente, el toque largo pasa de 500 ms a **2 s de dedo quieto**
+(tolerancia de 24 px) y los Ajustes **se cierran solos a los 2 minutos** sin uso.
+**Motivo:** en la primera prueba, un ciclo de dormir y despertar dejó los Ajustes al frente en
+lugar del marco. Un portarretrato que se va a Ajustes y no vuelve es un portarretrato roto.
+**Consecuencia:** las reglas viven en `InteractionRules`, en Kotlin puro, con test de regresión
+en el CI.
+
 ## 6. Plan por milestones
 
 Ver `PLAN - P1 Photoframe by Zambiotica.md` en la carpeta del proyecto Home_Assistant_Helpdesk.
@@ -137,7 +161,8 @@ integración con HA · **M4** preparación para Play · **M5** test cerrado y pr
 - Cuenta de Play Console: crearla y verificarla **antes de M4**.
 - Enlace PayPal.me para `.github/FUNDING.yml` y el README.
 - Ícono definitivo y paleta (M4).
-- Medir Ken Burns y el consumo de memoria en la Tab real (M1).
+- Medir Ken Burns en la Tab real (en la primera prueba estaba apagado, como corresponde por RAM).
+- Memoria medida en la Tab: ~14 MB con fotos de 1280×800 y ~30 MB con fotos de cámara, sin OOM.
 - Confirmar por ADB la resolución de la Tab (`wm size`) y si tiene bloqueo de pantalla.
 
 ---

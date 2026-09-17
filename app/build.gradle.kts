@@ -13,7 +13,7 @@ android {
         targetSdk = 36                                // requisito de Play desde el 31-ago-2026
         // En CI se pisa con el numero de build: -PversionCode=$GITHUB_RUN_NUMBER
         versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
-        versionName = "0.1.0"
+        versionName = "0.1.1"
     }
 
     buildTypes {

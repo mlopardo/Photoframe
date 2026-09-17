@@ -34,8 +34,11 @@ fundido, reloj y control remoto por ADB. Pensado para darle una segunda vida a u
 Recargar la lista de fotos y traer la app al frente:
 
 ```bash
-adb shell am start -n com.zambiotica.photoframe/.MainActivity --ez reload true
+adb shell am start -n com.zambiotica.photoframe/.MainActivity --ez reload true -f 0x04000000
 ```
+
+La bandera `0x04000000` (`FLAG_ACTIVITY_CLEAR_TOP`) es necesaria: sin ella, si la app ya está
+abierta, Android solo trae la tarea al frente y no entrega el extra `reload`.
 
 Encender y apagar la pantalla (funciones del sistema, no de la app):
 
@@ -51,7 +54,7 @@ action: androidtv.adb_command
 target:
   entity_id: media_player.tablet
 data:
-  command: "am start -n com.zambiotica.photoframe/.MainActivity --ez reload true"
+  command: "am start -n com.zambiotica.photoframe/.MainActivity --ez reload true -f 0x04000000"
 ```
 
 La app también vuelve a leer la carpeta sola cada vez que se enciende la pantalla, si detecta

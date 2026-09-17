@@ -14,6 +14,15 @@ import androidx.exifinterface.media.ExifInterface
  */
 object PhotoDecoder {
 
+    /** Ancho de la miniatura que se usa como fondo. Chico = rápido; el desenfoque hace el resto. */
+    private const val BACKGROUND_WIDTH = 160
+
+    /** Radio del desenfoque, en píxeles de la miniatura. */
+    private const val BLUR_RADIUS = 6
+
+    /** Cuánto se oscurece el fondo para que la foto de adelante resalte (0 = negro, 1 = sin tocar). */
+    private const val BACKGROUND_DIM = 0.55f
+
     fun decode(context: Context, uri: Uri, reqWidth: Int, reqHeight: Int, lowMemory: Boolean): Bitmap? {
         if (reqWidth <= 0 || reqHeight <= 0) return null
         return try {
@@ -38,13 +47,85 @@ object PhotoDecoder {
         }
     }
 
-    /** Miniatura muy chica que, estirada a pantalla completa, funciona como fondo difuminado. */
+    /**
+     * Fondo para el modo "encajar con fondo difuminado": miniatura + desenfoque real + oscurecido.
+     *
+     * Antes se estiraba una miniatura de 48 px sin desenfocar y el resultado se veía como un
+     * recorte pixelado (reportado en la primera prueba en la TabZambiótica, 2026-09-17).
+     * El desenfoque corre sobre 160 px de ancho: son ~16.000 píxeles, nada para la CPU.
+     */
     fun blurredBackground(source: Bitmap): Bitmap? = try {
-        val width = 48
+        val width = BACKGROUND_WIDTH
         val height = (width * source.height / source.width.toFloat()).toInt().coerceAtLeast(1)
-        Bitmap.createScaledBitmap(source, width, height, true)
+        val small = Bitmap.createScaledBitmap(source, width, height, true)
+        val pixels = IntArray(width * height)
+        small.getPixels(pixels, 0, width, 0, 0, width, height)
+        if (small !== source) small.recycle()
+
+        boxBlur(pixels, width, height, BLUR_RADIUS)
+        dim(pixels, BACKGROUND_DIM)
+
+        Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
     } catch (e: OutOfMemoryError) {
         null
+    } catch (e: IllegalArgumentException) {
+        null
+    }
+
+    /** Desenfoque de caja en dos pasadas (horizontal y vertical). Equivale a un gaussiano suave. */
+    private fun boxBlur(pixels: IntArray, width: Int, height: Int, radius: Int) {
+        if (radius <= 0 || width <= 1 || height <= 1) return
+        val temp = IntArray(pixels.size)
+        blurPass(pixels, temp, width, height, radius)   // filas
+        blurPass(temp, pixels, height, width, radius)   // columnas (con la matriz transpuesta)
+    }
+
+    /** Recorre `input` por filas y escribe el promedio en `output` transpuesto. */
+    private fun blurPass(input: IntArray, output: IntArray, width: Int, height: Int, radius: Int) {
+        for (row in 0 until height) {
+            val base = row * width
+            var red = 0
+            var green = 0
+            var blue = 0
+            var count = 0
+            for (x in 0..radius.coerceAtMost(width - 1)) {
+                val color = input[base + x]
+                red += (color shr 16) and 0xFF
+                green += (color shr 8) and 0xFF
+                blue += color and 0xFF
+                count++
+            }
+            for (x in 0 until width) {
+                output[x * height + row] =
+                    (0xFF shl 24) or ((red / count) shl 16) or ((green / count) shl 8) or (blue / count)
+                val leaving = x - radius
+                val entering = x + radius + 1
+                if (leaving >= 0) {
+                    val color = input[base + leaving]
+                    red -= (color shr 16) and 0xFF
+                    green -= (color shr 8) and 0xFF
+                    blue -= color and 0xFF
+                    count--
+                }
+                if (entering < width) {
+                    val color = input[base + entering]
+                    red += (color shr 16) and 0xFF
+                    green += (color shr 8) and 0xFF
+                    blue += color and 0xFF
+                    count++
+                }
+            }
+        }
+    }
+
+    private fun dim(pixels: IntArray, factor: Float) {
+        for (i in pixels.indices) {
+            val color = pixels[i]
+            val red = (((color shr 16) and 0xFF) * factor).toInt()
+            val green = (((color shr 8) and 0xFF) * factor).toInt()
+            val blue = ((color and 0xFF) * factor).toInt()
+            pixels[i] = (0xFF shl 24) or (red shl 16) or (green shl 8) or blue
+        }
     }
 
     fun sampleSize(width: Int, height: Int, reqWidth: Int, reqHeight: Int): Int {

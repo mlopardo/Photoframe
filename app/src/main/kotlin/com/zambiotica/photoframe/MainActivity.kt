@@ -10,7 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.GestureDetector
+import android.os.SystemClock
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -85,7 +85,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private lateinit var gestures: GestureDetector
+    private var resumedAtMs = 0L
+    private var touchDownMs = 0L
+    private var touchDownX = 0f
+    private var touchDownY = 0f
+    private var longPressHandled = false
+
+    private val openSettings = Runnable {
+        longPressHandled = true
+        startActivity(Intent(this, SettingsActivity::class.java))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -107,22 +116,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.button_next).setOnClickListener { showNext(forward = true) }
         findViewById<View>(R.id.button_play_pause).setOnClickListener { togglePause() }
 
-        gestures = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onDown(e: MotionEvent) = true
-
-            override fun onSingleTapUp(e: MotionEvent): Boolean {
-                showControls()
-                return true
-            }
-
-            override fun onLongPress(e: MotionEvent) {
-                startActivity(Intent(this@MainActivity, SettingsActivity::class.java))
-            }
-        })
-        findViewById<View>(R.id.root).setOnTouchListener { view, event ->
-            view.performClick()
-            gestures.onTouchEvent(event)
-        }
+        findViewById<View>(R.id.root).setOnTouchListener { _, event -> handleTouch(event) }
 
         handleReload(intent)
     }
@@ -143,6 +137,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         running = true
+        resumedAtMs = SystemClock.elapsedRealtime()
         applyOrientation()
         applyImmersiveMode()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -156,6 +151,7 @@ class MainActivity : AppCompatActivity() {
         running = false
         handler.removeCallbacks(advance)
         handler.removeCallbacks(clockTick)
+        handler.removeCallbacks(openSettings)
         // Sin esta bandera, HA puede dormir la pantalla con keyevent 223.
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
@@ -328,6 +324,49 @@ class MainActivity : AppCompatActivity() {
     }
 
     // --- Interfaz --------------------------------------------------------------
+
+    /**
+     * Toque simple = barra de controles. Toque largo y deliberado = Ajustes.
+     *
+     * Los toques de los primeros segundos tras encender la pantalla se descartan: en la
+     * TabZambiótica un toque fantasma al despertar dejó los Ajustes al frente en vez del marco.
+     */
+    private fun handleTouch(event: MotionEvent): Boolean {
+        val now = SystemClock.elapsedRealtime()
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                if (InteractionRules.ignoreTouch(now, resumedAtMs)) return true
+                touchDownMs = now
+                touchDownX = event.x
+                touchDownY = event.y
+                longPressHandled = false
+                handler.postDelayed(openSettings, InteractionRules.LONG_PRESS_MS)
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                if (movedPx(event) > InteractionRules.MOVE_SLOP_PX) {
+                    handler.removeCallbacks(openSettings)
+                }
+            }
+
+            MotionEvent.ACTION_UP -> {
+                handler.removeCallbacks(openSettings)
+                val held = now - touchDownMs
+                if (!longPressHandled && InteractionRules.isTap(held, movedPx(event))) {
+                    showControls()
+                }
+            }
+
+            MotionEvent.ACTION_CANCEL -> handler.removeCallbacks(openSettings)
+        }
+        return true
+    }
+
+    private fun movedPx(event: MotionEvent): Int {
+        val dx = event.x - touchDownX
+        val dy = event.y - touchDownY
+        return kotlin.math.sqrt(dx * dx + dy * dy).toInt()
+    }
 
     private fun showControls() {
         controls.visibility = View.VISIBLE

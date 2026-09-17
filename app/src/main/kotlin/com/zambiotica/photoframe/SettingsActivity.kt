@@ -3,17 +3,51 @@ package com.zambiotica.photoframe
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 
+/**
+ * Ajustes. Se cierra sola tras un rato sin uso y vuelve al marco: si alguien abre los
+ * Ajustes y se va, el portarretrato no se queda para siempre en esta pantalla.
+ */
 class SettingsActivity : AppCompatActivity() {
+
+    companion object {
+        private const val AUTO_CLOSE_MS = 2 * 60 * 1000L
+    }
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val autoClose = Runnable { finish() }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportFragmentManager.beginTransaction()
             .replace(android.R.id.content, SettingsFragment())
             .commit()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        scheduleAutoClose()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        handler.removeCallbacks(autoClose)
+    }
+
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        scheduleAutoClose()
+    }
+
+    private fun scheduleAutoClose() {
+        handler.removeCallbacks(autoClose)
+        handler.postDelayed(autoClose, AUTO_CLOSE_MS)
     }
 }
 
