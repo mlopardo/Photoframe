@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="@string/pref_cat_slideshow">
+        <SeekBarPreference
+            app:defaultValue="30"
+            app:key="interval_sec"
+            app:max="300"
+            android:min="5"
+            app:seekBarIncrement="5"
+            app:showSeekBarValue="true"
+            app:title="@string/pref_interval" />
+
+        <SeekBarPreference
+            app:defaultValue="1500"
+            app:key="fade_ms"
+            app:max="3000"
+            android:min="0"
+            app:seekBarIncrement="250"
+            app:showSeekBarValue="true"
+            app:title="@string/pref_fade" />
+
+        <ListPreference
+            app:defaultValue="shuffle"
+            app:entries="@array/order_entries"
+            app:entryValues="@array/order_values"
+            app:key="order"
+            app:title="@string/pref_order"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:defaultValue="fit_blur"
+            app:entries="@array/scale_entries"
+            app:entryValues="@array/scale_values"
+            app:key="scale"
+            app:title="@string/pref_scale"
+            app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreferenceCompat
+            app:key="ken_burns"
+            app:summary="@string/pref_kenburns_summary"
+            app:title="@string/pref_kenburns" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/pref_cat_source">
+        <Preference
+            app:key="folder_uri"
+            app:title="@string/pref_folder" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="subfolders"
+            app:title="@string/pref_subfolders" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/pref_cat_display">
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="clock"
+            app:title="@string/pref_clock" />
+
+        <ListPreference
+            app:defaultValue="bottom_end"
+            app:entries="@array/clock_position_entries"
+            app:entryValues="@array/clock_position_values"
+            app:key="clock_position"
+            app:title="@string/pref_clock_position"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:defaultValue="sensor"
+            app:entries="@array/orientation_entries"
+            app:entryValues="@array/orientation_values"
+            app:key="orientation"
+            app:title="@string/pref_orientation"
+            app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="autostart"
+            app:title="@string/pref_autostart" />
+    </PreferenceCategory>
+</PreferenceScreen>

@@ -1,0 +1,11 @@
+<resources>
+    <style name="Theme.Photoframe" parent="Theme.AppCompat.DayNight">
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+
+    <style name="Theme.Photoframe.Fullscreen" parent="Theme.Photoframe">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

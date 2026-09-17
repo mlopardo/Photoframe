@@ -1,0 +1,17 @@
+<!-- Fallback para Android 7 (API 25): vector con fondo incluido. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#101418" android:pathData="M0,0h108v108h-108z" />
+    <path
+        android:fillColor="#F2F5F7"
+        android:pathData="M26,30h56a4,4 0 0 1 4,4v40a4,4 0 0 1 -4,4H26a4,4 0 0 1 -4,-4V34a4,4 0 0 1 4,-4zM28,72h52V36H28z" />
+    <path
+        android:fillColor="#4FA3C7"
+        android:pathData="M31,69l14,-18 10,12 8,-9 14,15z" />
+    <path
+        android:fillColor="#F2C14E"
+        android:pathData="M67,46m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0" />
+</vector>

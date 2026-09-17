@@ -1,0 +1,52 @@
+<resources>
+    <string name="app_name">Photoframe</string>
+    <string name="settings_title">Ajustes</string>
+
+    <string name="pref_cat_slideshow">Pase de fotos</string>
+    <string name="pref_interval">Segundos por foto</string>
+    <string name="pref_fade">Duración del fundido (ms)</string>
+    <string name="pref_order">Orden</string>
+    <string name="pref_scale">Ajuste de la imagen</string>
+    <string name="pref_kenburns">Efecto Ken Burns (zoom y paneo lentos)</string>
+    <string name="pref_kenburns_summary">Usa más CPU. Viene apagado en equipos con poca memoria.</string>
+
+    <string name="pref_cat_source">Fotos</string>
+    <string name="pref_folder">Elegir carpeta</string>
+    <string name="pref_folder_summary">Actual: %1$s</string>
+    <string name="pref_folder_none">sin carpeta elegida</string>
+    <string name="pref_subfolders">Incluir subcarpetas</string>
+
+    <string name="pref_cat_display">Pantalla</string>
+    <string name="pref_clock">Mostrar reloj y fecha</string>
+    <string name="pref_clock_position">Posición del reloj</string>
+    <string name="pref_orientation">Orientación de la pantalla</string>
+    <string name="pref_autostart">Arrancar después de reiniciar el equipo</string>
+
+    <string name="msg_no_photos">No se encontraron fotos.\n\nMantené el dedo apoyado en la pantalla para abrir los ajustes y elegir una carpeta.</string>
+    <string name="msg_loading">Cargando fotos…</string>
+    <string name="action_previous">Anterior</string>
+    <string name="action_playpause">Reproducir o pausar</string>
+    <string name="action_next">Siguiente</string>
+
+    <string-array name="order_entries">
+        <item>Aleatorio sin repetir</item>
+        <item>Aleatorio puro</item>
+        <item>Por nombre de archivo</item>
+    </string-array>
+    <string-array name="scale_entries">
+        <item>Encajar con fondo difuminado</item>
+        <item>Encajar con fondo negro</item>
+        <item>Recortar para llenar</item>
+    </string-array>
+    <string-array name="clock_position_entries">
+        <item>Abajo a la derecha</item>
+        <item>Abajo a la izquierda</item>
+        <item>Arriba a la derecha</item>
+        <item>Arriba a la izquierda</item>
+    </string-array>
+    <string-array name="orientation_entries">
+        <item>Seguir al sensor</item>
+        <item>Horizontal</item>
+        <item>Vertical</item>
+    </string-array>
+</resources>

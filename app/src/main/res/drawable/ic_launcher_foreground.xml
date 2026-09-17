@@ -1,0 +1,16 @@
+<!-- Ícono provisorio (marco + paisaje). Se reemplaza por el definitivo en M4. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#F2F5F7"
+        android:pathData="M26,30h56a4,4 0 0 1 4,4v40a4,4 0 0 1 -4,4H26a4,4 0 0 1 -4,-4V34a4,4 0 0 1 4,-4zM28,72h52V36H28z" />
+    <path
+        android:fillColor="#4FA3C7"
+        android:pathData="M31,69l14,-18 10,12 8,-9 14,15z" />
+    <path
+        android:fillColor="#F2C14E"
+        android:pathData="M67,46m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0" />
+</vector>

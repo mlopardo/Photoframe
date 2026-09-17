@@ -1,0 +1,43 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v3
+
+      # Genera el wrapper si el repo todavia no lo tiene versionado
+      # (Android Studio lo crea en el primer sync).
+      - name: Generar Gradle wrapper si falta
+        run: '[ -f ./gradlew ] || gradle wrapper --gradle-version 8.13'
+
+      - name: Hacer ejecutable el wrapper
+        run: chmod +x ./gradlew
+
+      - name: Tests unitarios
+        run: ./gradlew testDebugUnitTest
+
+      - name: Lint
+        run: ./gradlew lintDebug
+
+      - name: Build APK debug
+        run: ./gradlew assembleDebug -PversionCode=${{ github.run_number }}
+
+      - name: Publicar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: photoframe-debug
+          path: app/build/outputs/apk/debug/*.apk

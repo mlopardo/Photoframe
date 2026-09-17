@@ -1,0 +1,73 @@
+<resources>
+    <string name="app_name">Photoframe</string>
+    <string name="settings_title">Settings</string>
+
+    <string name="pref_cat_slideshow">Slideshow</string>
+    <string name="pref_interval">Seconds per photo</string>
+    <string name="pref_fade">Fade duration (ms)</string>
+    <string name="pref_order">Order</string>
+    <string name="pref_scale">Fit mode</string>
+    <string name="pref_kenburns">Ken Burns effect (slow zoom and pan)</string>
+    <string name="pref_kenburns_summary">Uses more CPU. Off by default on low-memory devices.</string>
+
+    <string name="pref_cat_source">Photos</string>
+    <string name="pref_folder">Choose folder</string>
+    <string name="pref_folder_summary">Current: %1$s</string>
+    <string name="pref_folder_none">no folder selected</string>
+    <string name="pref_subfolders">Include subfolders</string>
+
+    <string name="pref_cat_display">Display</string>
+    <string name="pref_clock">Show clock and date</string>
+    <string name="pref_clock_position">Clock position</string>
+    <string name="pref_orientation">Screen orientation</string>
+    <string name="pref_autostart">Start after device reboot</string>
+
+    <string name="msg_no_photos">No photos found.\n\nTouch and hold the screen to open the settings and choose a folder.</string>
+    <string name="msg_loading">Loading photos…</string>
+    <string name="action_previous">Previous</string>
+    <string name="action_playpause">Play or pause</string>
+    <string name="action_next">Next</string>
+
+    <string-array name="order_entries">
+        <item>Random without repeats</item>
+        <item>Pure random</item>
+        <item>By file name</item>
+    </string-array>
+    <string-array name="order_values">
+        <item>shuffle</item>
+        <item>random</item>
+        <item>name</item>
+    </string-array>
+    <string-array name="scale_entries">
+        <item>Fit, blurred background</item>
+        <item>Fit, black background</item>
+        <item>Crop to fill</item>
+    </string-array>
+    <string-array name="scale_values">
+        <item>fit_blur</item>
+        <item>fit_black</item>
+        <item>crop</item>
+    </string-array>
+    <string-array name="clock_position_entries">
+        <item>Bottom right</item>
+        <item>Bottom left</item>
+        <item>Top right</item>
+        <item>Top left</item>
+    </string-array>
+    <string-array name="clock_position_values">
+        <item>bottom_end</item>
+        <item>bottom_start</item>
+        <item>top_end</item>
+        <item>top_start</item>
+    </string-array>
+    <string-array name="orientation_entries">
+        <item>Follow the sensor</item>
+        <item>Landscape</item>
+        <item>Portrait</item>
+    </string-array>
+    <string-array name="orientation_values">
+        <item>sensor</item>
+        <item>landscape</item>
+        <item>portrait</item>
+    </string-array>
+</resources>
