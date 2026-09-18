@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -23,6 +24,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.preference.PreferenceManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,6 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.DateFormat
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -66,6 +69,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var dateText: TextView
     private lateinit var controls: View
     private lateinit var messageText: TextView
+    private lateinit var photoDateText: TextView
 
     private var photos: List<Uri> = emptyList()
     private var fingerprint: String = ""
@@ -98,6 +102,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Escribe los valores por defecto la primera vez, para que la pantalla de Ajustes
+        // muestre exactamente lo que la app esta usando (antes se veian todos en apagado).
+        PreferenceManager.setDefaultValues(this, R.xml.prefs, false)
+        Prefs.persistKenBurnsDefault(this)
         setContentView(R.layout.activity_main)
 
         slotA = findViewById(R.id.slot_a)
@@ -111,6 +119,7 @@ class MainActivity : AppCompatActivity() {
         dateText = findViewById(R.id.date_text)
         controls = findViewById(R.id.controls)
         messageText = findViewById(R.id.message_text)
+        photoDateText = findViewById(R.id.photo_date_text)
 
         findViewById<View>(R.id.button_previous).setOnClickListener { showNext(forward = false) }
         findViewById<View>(R.id.button_next).setOnClickListener { showNext(forward = true) }
@@ -247,30 +256,59 @@ class MainActivity : AppCompatActivity() {
                 scheduleNext()
                 return@launch
             }
+            val takenAt = if (Prefs.photoDate(this@MainActivity)) {
+                withContext(Dispatchers.IO) { PhotoDecoder.readTakenAt(this@MainActivity, uri) }
+            } else {
+                null
+            }
             val scaleMode = Prefs.scale(this@MainActivity)
             val background = if (scaleMode == "fit_blur") {
                 withContext(Dispatchers.IO) { PhotoDecoder.blurredBackground(bitmap) }
             } else {
                 null
             }
-            display(bitmap, background, scaleMode)
+            display(bitmap, background, scaleMode, takenAt)
             scheduleNext()
         }
     }
 
-    private fun display(bitmap: Bitmap, background: Bitmap?, scaleMode: String) {
+    private fun display(
+        bitmap: Bitmap,
+        background: Bitmap?,
+        scaleMode: String,
+        takenAt: ExifDates.TakenAt?
+    ) {
+        showPhotoDate(takenAt)
+
         val incomingSlot = if (frontIsA) slotB else slotA
         val incomingPhoto = if (frontIsA) photoB else photoA
         val incomingBackground = if (frontIsA) backgroundB else backgroundA
         val outgoingSlot = if (frontIsA) slotA else slotB
 
-        incomingPhoto.scaleType =
-            if (scaleMode == "crop") ImageView.ScaleType.CENTER_CROP else ImageView.ScaleType.FIT_CENTER
         incomingPhoto.setImageBitmap(bitmap)
         incomingPhoto.scaleX = 1f
         incomingPhoto.scaleY = 1f
         incomingPhoto.translationX = 0f
         incomingPhoto.translationY = 0f
+
+        val screenWidth = resources.displayMetrics.widthPixels
+        val screenHeight = resources.displayMetrics.heightPixels
+        if (scaleMode == "crop") {
+            incomingPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
+        } else {
+            // Encaja la foto, pero sin agrandarla mas alla del tope: una foto de baja
+            // resolucion se ve nitida y mas chica, con el fondo difuminado alrededor.
+            val scale = ScalingRules.displayScale(bitmap.width, bitmap.height, screenWidth, screenHeight)
+            val matrix = Matrix().apply {
+                setScale(scale, scale)
+                postTranslate(
+                    (screenWidth - bitmap.width * scale) / 2f,
+                    (screenHeight - bitmap.height * scale) / 2f
+                )
+            }
+            incomingPhoto.scaleType = ImageView.ScaleType.MATRIX
+            incomingPhoto.imageMatrix = matrix
+        }
 
         if (background != null) {
             incomingBackground.setImageBitmap(background)
@@ -293,7 +331,11 @@ class MainActivity : AppCompatActivity() {
         }
         frontIsA = !frontIsA
 
-        if (Prefs.kenBurns(this)) startKenBurns(incomingPhoto)
+        // El zoom solo se aplica a fotos con resolucion de sobra: en una foto chica,
+        // agrandarla un 8% mas solo agranda los pixeles.
+        val hasPixelsToSpare =
+            ScalingRules.allowsKenBurns(bitmap.width, bitmap.height, screenWidth, screenHeight)
+        if (Prefs.kenBurns(this) && hasPixelsToSpare) startKenBurns(incomingPhoto)
     }
 
     /** Zoom y paneo suaves. Se animan las propiedades de la vista: no se vuelve a dibujar el bitmap. */
@@ -375,6 +417,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val hideControls = Runnable { controls.visibility = View.GONE }
+
+    /**
+     * Fecha de captura, leída del EXIF de la propia foto. Si la foto no la trae —típico de
+     * imágenes reenviadas o editadas— no se muestra nada, en vez de inventar una fecha.
+     */
+    private fun showPhotoDate(takenAt: ExifDates.TakenAt?) {
+        if (takenAt == null || !Prefs.photoDate(this)) {
+            photoDateText.visibility = View.GONE
+            return
+        }
+        val calendar = Calendar.getInstance().apply {
+            clear()
+            set(takenAt.year, takenAt.month - 1, takenAt.day)
+        }
+        photoDateText.text = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(calendar.time)
+
+        val params = photoDateText.layoutParams as FrameLayout.LayoutParams
+        params.gravity = when (OverlayRules.photoDateGravity(Prefs.clockPosition(this))) {
+            "bottom_end" -> Gravity.BOTTOM or Gravity.END
+            else -> Gravity.BOTTOM or Gravity.START
+        }
+        photoDateText.layoutParams = params
+        photoDateText.visibility = View.VISIBLE
+    }
 
     private fun applyClockSettings() {
         if (!Prefs.clock(this)) {

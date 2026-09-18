@@ -16,6 +16,8 @@ fundido, reloj y control remoto por ADB. Pensado para darle una segunda vida a u
 - Ajuste **encajar con fondo difuminado**, encajar con fondo negro o recortar para llenar.
 - Efecto **Ken Burns** opcional (viene apagado en equipos con poca memoria).
 - Reloj y fecha superpuestos, con posición configurable.
+- **Fecha en que se tomó cada foto**, leída del EXIF de la propia imagen. Si la foto no la trae,
+  no se muestra nada. Sin red y sin permisos extra.
 - La pantalla se mantiene encendida mientras la app está al frente; con la pantalla apagada el
   pase se detiene, para no gastar batería.
 - Arranque automático después de reiniciar el equipo (hasta Android 9; ver más abajo).

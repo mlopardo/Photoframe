@@ -67,12 +67,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.prefs, rootKey)
 
-        // El valor por defecto de Ken Burns depende del equipo, así que se fija acá.
-        findPreference<androidx.preference.SwitchPreferenceCompat>(Prefs.KEY_KEN_BURNS)?.let {
-            if (!preferenceManager.sharedPreferences!!.contains(Prefs.KEY_KEN_BURNS)) {
-                it.isChecked = Prefs.defaultKenBurns(requireContext())
-            }
-        }
+        // El valor por defecto de Ken Burns lo escribe MainActivity al arrancar
+        // (depende de la memoria del equipo), así que acá ya viene del almacenamiento.
 
         findPreference<Preference>(Prefs.KEY_FOLDER_URI)?.setOnPreferenceClickListener {
             pickFolder.launch(null)

@@ -18,6 +18,8 @@
 
     <string name="pref_cat_display">Pantalla</string>
     <string name="pref_clock">Mostrar reloj y fecha</string>
+    <string name="pref_photo_date">Mostrar la fecha en que se tomó la foto</string>
+    <string name="pref_photo_date_summary">Se lee de la propia foto; si no la trae, no se muestra nada</string>
     <string name="pref_clock_position">Posición del reloj</string>
     <string name="pref_orientation">Orientación de la pantalla</string>
     <string name="pref_autostart">Arrancar después de reiniciar el equipo</string>

@@ -128,6 +128,17 @@ object PhotoDecoder {
         }
     }
 
+    /** Fecha de captura del EXIF, o null si la foto no la trae. */
+    fun readTakenAt(context: Context, uri: Uri): ExifDates.TakenAt? = try {
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            val exif = ExifInterface(stream)
+            ExifDates.parse(exif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL))
+                ?: ExifDates.parse(exif.getAttribute(ExifInterface.TAG_DATETIME))
+        }
+    } catch (e: Exception) {
+        null
+    }
+
     fun sampleSize(width: Int, height: Int, reqWidth: Int, reqHeight: Int): Int {
         var sample = 1
         while (width / (sample * 2) >= reqWidth && height / (sample * 2) >= reqHeight) {

@@ -7,7 +7,7 @@
 | **Licencia** | GPL-3.0 · repo público `mlopardo/Photoframe` |
 | **SDK** | `minSdk 25` · `compileSdk` / `targetSdk 36` |
 | **Estado** | M1 — probado en la TabZambiótica el 2026-09-17; v0.1.1 corrige lo observado |
-| **Versión del documento** | 0.1.1 |
+| **Versión del documento** | 0.1.3 |
 | **Última actualización** | 2026-09-17 |
 | **Líder técnico** | Apu (asesor Android) + Mariano |
 
@@ -25,6 +25,7 @@ gratuita para darle una segunda vida a tablets viejas.
 ## 2. Alcance del MVP
 
 - Pase de fotos en pantalla completa, con fundido (1,5 s) e intervalo configurable (30 s por defecto).
+- Fecha de captura de cada foto, leída de su EXIF (opcional, encendida por defecto).
 - Orden aleatorio sin repetir, aleatorio puro o por nombre de archivo.
 - Ajuste: encajar con fondo difuminado (por defecto), encajar con fondo negro o recortar para llenar.
 - Efecto Ken Burns opcional, apagado por defecto en equipos con poca memoria.
@@ -149,6 +150,47 @@ después de que la app vuelve al frente, el toque largo pasa de 500 ms a **2 s d
 lugar del marco. Un portarretrato que se va a Ajustes y no vuelve es un portarretrato roto.
 **Consecuencia:** las reglas viven en `InteractionRules`, en Kotlin puro, con test de regresión
 en el CI.
+
+### ADR-010 — Tema oscuro fijo, no DayNight
+**Estado:** Aceptado · **2026-09-17**
+La app usa un tema oscuro propio con colores explícitos de texto, y los Ajustes tienen su
+propio tema con tipografía más grande.
+**Motivo:** con `Theme.AppCompat.DayNight` y el fondo negro forzado, en Android 7 —donde no
+existe el modo oscuro del sistema— el tema resolvía a claro: títulos gris oscuro sobre negro.
+La pantalla de Ajustes quedó ilegible y se terminó tocando interruptores a ciegas; así se
+encendió Ken Burns en la Tab sin querer.
+**Consecuencia:** una pantalla que no se puede leer no es un problema estético, es un problema
+funcional: provoca cambios de configuración accidentales.
+
+### ADR-011 — Tope de ampliación y Ken Burns solo con resolución de sobra
+**Estado:** Aceptado · **2026-09-17**
+La foto se dibuja con una matriz de escala uniforme que nunca supera **1,3×**, y el efecto
+Ken Burns se aplica solo si la foto tiene al menos **1,1×** los píxeles de la pantalla.
+**Motivo:** unas pocas fotos viejas de baja resolución se veían muy pixeladas al estirarlas a
+pantalla completa, y el zoom del efecto lo empeoraba. Ampliar no inventa detalle.
+**Consecuencia:** esas fotos se ven más chicas pero nítidas, rodeadas del fondo difuminado.
+Las reglas viven en `ScalingRules`, en Kotlin puro, con test de regresión.
+
+### ADR-012 — Los valores por defecto se persisten al primer arranque
+**Estado:** Aceptado · **2026-09-17**
+`MainActivity` llama a `PreferenceManager.setDefaultValues` y persiste el valor calculado de
+Ken Burns.
+**Motivo:** los Ajustes mostraban todo en apagado aunque la app usara otros valores, porque los
+defaults vivían solo en memoria. La pantalla de Ajustes debe mostrar lo que la app hace.
+
+### ADR-013 — Fecha de la foto desde el EXIF, y ubicación offline diferida
+**Estado:** Aceptado · **2026-09-17**
+La app muestra la fecha de captura leída del EXIF (`DateTimeOriginal`, con `DateTime` como
+respaldo), en la esquina inferior libre, y no muestra nada cuando la foto no la trae.
+**Motivo:** el EXIF ya se abre para leer la orientación, así que la fecha sale sin costo, sin
+permisos y sin red. Inventar una fecha a partir de la fecha del archivo sería engañoso: las
+copias cambian esa fecha.
+**Ubicación (diferida a v0.2):** las coordenadas también están en el EXIF, pero convertirlas en
+"Pilar, Buenos Aires" necesita o bien `Geocoder` —que exige red, y la app no pide `INTERNET` a
+propósito— o bien una **base de ciudades offline** (GeoNames, ~2–4 MB en el APK) con búsqueda
+del punto más cercano. Antes de sumar ese peso hay que medir **cuántas fotos conservan el
+geotag**: las reenviadas por mensajería suelen tenerlo borrado. Detalle acordado: ciudad y
+provincia, nunca la dirección exacta.
 
 ## 6. Plan por milestones
 

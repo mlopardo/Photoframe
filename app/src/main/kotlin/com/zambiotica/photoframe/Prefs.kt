@@ -19,6 +19,7 @@ object Prefs {
     const val KEY_SUBFOLDERS = "subfolders"
     const val KEY_CLOCK = "clock"
     const val KEY_CLOCK_POSITION = "clock_position"
+    const val KEY_PHOTO_DATE = "photo_date"
     const val KEY_ORIENTATION = "orientation"
     const val KEY_AUTOSTART = "autostart"
 
@@ -49,6 +50,8 @@ object Prefs {
 
     fun clock(context: Context): Boolean = sp(context).getBoolean(KEY_CLOCK, true)
 
+    fun photoDate(context: Context): Boolean = sp(context).getBoolean(KEY_PHOTO_DATE, true)
+
     fun clockPosition(context: Context): String =
         sp(context).getString(KEY_CLOCK_POSITION, "bottom_end") ?: "bottom_end"
 
@@ -56,6 +59,18 @@ object Prefs {
         sp(context).getString(KEY_ORIENTATION, "sensor") ?: "sensor"
 
     fun autostart(context: Context): Boolean = sp(context).getBoolean(KEY_AUTOSTART, true)
+
+    /**
+     * Escribe el valor por defecto de Ken Burns la primera vez, porque depende del equipo
+     * y no se puede declarar en res/xml/prefs.xml. Asi la pantalla de Ajustes muestra el
+     * mismo valor que usa la app.
+     */
+    fun persistKenBurnsDefault(context: Context) {
+        val preferences = sp(context)
+        if (!preferences.contains(KEY_KEN_BURNS)) {
+            preferences.edit().putBoolean(KEY_KEN_BURNS, defaultKenBurns(context)).apply()
+        }
+    }
 
     /**
      * Ken Burns viene encendido solo en equipos con memoria de sobra.

@@ -60,6 +60,12 @@
             app:key="clock"
             app:title="@string/pref_clock" />
 
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="photo_date"
+            app:summary="@string/pref_photo_date_summary"
+            app:title="@string/pref_photo_date" />
+
         <ListPreference
             app:defaultValue="bottom_end"
             app:entries="@array/clock_position_entries"
