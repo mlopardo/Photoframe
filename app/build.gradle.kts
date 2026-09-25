@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -12,9 +15,12 @@ plugins {
  * depuración: así cualquiera puede clonar y compilar sin tener la clave.
  */
 val keystorePropertiesFile = rootProject.file("keystore.properties")
-val keystoreProperties = java.util.Properties().apply {
+// Ojo: dentro de un build.gradle.kts, `java` es la extension del plugin Java, no el paquete
+// java.* de la JDK. Por eso `java.util.Properties()` no compila y hay que importar la clase
+// arriba y usarla a secas.
+val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.exists()) {
-        keystorePropertiesFile.inputStream().use { load(it) }
+        FileInputStream(keystorePropertiesFile).use { stream -> load(stream) }
     }
 }
 
@@ -31,7 +37,7 @@ android {
         targetSdk = 36                                // requisito de Play desde el 31-ago-2026
         // En CI se pisa con el numero de build: -PversionCode=$GITHUB_RUN_NUMBER
         versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
-        versionName = "0.2.0"
+        versionName = "0.2.1"
     }
 
     signingConfigs {

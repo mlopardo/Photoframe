@@ -246,6 +246,20 @@ submuestreo aplicado, el tamaño en pantalla y si la foto trae fecha y geotag.
 **Motivo:** dos versiones seguidas se fueron en diagnosticar a ojo un problema de imagen. Que la
 app diga de dónde sale lo que se ve convierte una discusión en un dato.
 
+### ADR-019 — Nada se da por publicado hasta que el CI lo confirma
+**Estado:** Aceptado · **2026-09-25**
+Una versión se considera entregada solo cuando el run del CI terminó en verde y el paso
+"Verificar quien firmo el APK" imprimió la huella esperada. Un push sin errores en la terminal no
+dice nada sobre el build.
+**Motivo:** la v0.2.0 se dio por lista con el push hecho, pero sus tres corridas fallaron en el
+primer paso y la release nunca se publicó. La causa fue un error de una línea en
+`app/build.gradle.kts`: dentro de un script de Gradle Kotlin, `java` es la extensión del plugin
+Java y no el paquete de la JDK, así que `java.util.Properties()` no resuelve y el script ni
+siquiera compila. Se corrigió importando `java.util.Properties` arriba del archivo. Por eso la
+v0.2.0 se descarta y el contenido sale como **v0.2.1**.
+**Consecuencia práctica:** se publica en dos pasos — primero push a `main` y verificación del run,
+y recién con el run en verde se crea el tag que dispara la release.
+
 ## 6. Plan por milestones
 
 Ver `PLAN - P1 Photoframe by Zambiotica.md` en la carpeta del proyecto Home_Assistant_Helpdesk.
