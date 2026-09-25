@@ -6,6 +6,8 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
+  # Permite relanzar un build a mano desde la pestana Actions, sin inventar un commit.
+  workflow_dispatch:
 
 permissions:
   contents: write
