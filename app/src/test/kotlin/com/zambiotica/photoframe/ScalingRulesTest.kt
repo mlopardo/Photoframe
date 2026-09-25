@@ -50,6 +50,18 @@ class ScalingRulesTest {
     }
 
     @Test
+    fun `ninguna foto se agranda respecto de su tamano real`() {
+        val tamanos = listOf(
+            160 to 120, 320 to 240, 640 to 480, 800 to 600, 1024 to 768,
+            1280 to 800, 1600 to 1200, 4000 to 3000, 3000 to 4000
+        )
+        for ((ancho, alto) in tamanos) {
+            val escala = ScalingRules.displayScale(ancho, alto, screenW, screenH)
+            assert(escala <= 1.0f) { "la foto de $ancho x $alto se agrandaria a $escala" }
+        }
+    }
+
+    @Test
     fun `una foto invalida no rompe el calculo`() {
         assertEquals(1f, ScalingRules.displayScale(0, 0, screenW, screenH), 0.0001f)
     }

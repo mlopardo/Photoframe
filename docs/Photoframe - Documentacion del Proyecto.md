@@ -7,7 +7,7 @@
 | **Licencia** | GPL-3.0 · repo público `mlopardo/Photoframe` |
 | **SDK** | `minSdk 25` · `compileSdk` / `targetSdk 36` |
 | **Estado** | M1 — probado en la TabZambiótica el 2026-09-17; v0.1.1 corrige lo observado |
-| **Versión del documento** | 0.1.3 |
+| **Versión del documento** | 0.1.4 |
 | **Última actualización** | 2026-09-17 |
 | **Líder técnico** | Apu (asesor Android) + Mariano |
 
@@ -151,6 +151,13 @@ lugar del marco. Un portarretrato que se va a Ajustes y no vuelve es un portarre
 **Consecuencia:** las reglas viven en `InteractionRules`, en Kotlin puro, con test de regresión
 en el CI.
 
+### ADR-014 — Jerarquía tipográfica del marco
+**Estado:** Aceptado · **2026-09-24**
+Reloj 34sp, fecha actual 14sp, fecha de captura de la foto 22sp.
+**Motivo:** en la primera versión el reloj dominaba la pantalla (44sp) y la fecha de la foto era
+ilegible a distancia (15sp). En un portarretrato el protagonista es la foto y su contexto —cuándo
+se tomó, y más adelante dónde—, no la hora actual, que además está en cualquier otro lado.
+
 ### ADR-010 — Tema oscuro fijo, no DayNight
 **Estado:** Aceptado · **2026-09-17**
 La app usa un tema oscuro propio con colores explícitos de texto, y los Ajustes tienen su
@@ -162,14 +169,18 @@ encendió Ken Burns en la Tab sin querer.
 **Consecuencia:** una pantalla que no se puede leer no es un problema estético, es un problema
 funcional: provoca cambios de configuración accidentales.
 
-### ADR-011 — Tope de ampliación y Ken Burns solo con resolución de sobra
-**Estado:** Aceptado · **2026-09-17**
-La foto se dibuja con una matriz de escala uniforme que nunca supera **1,3×**, y el efecto
+### ADR-011 — Las fotos nunca se amplían, y Ken Burns solo con resolución de sobra
+**Estado:** Aceptado · **2026-09-17** · **Revisado 2026-09-24: el tope pasa de 1,3× a 1,0×**
+La foto se dibuja con una matriz de escala uniforme que **nunca supera su tamaño real**, y el efecto
 Ken Burns se aplica solo si la foto tiene al menos **1,1×** los píxeles de la pantalla.
 **Motivo:** unas pocas fotos viejas de baja resolución se veían muy pixeladas al estirarlas a
 pantalla completa, y el zoom del efecto lo empeoraba. Ampliar no inventa detalle.
 **Consecuencia:** esas fotos se ven más chicas pero nítidas, rodeadas del fondo difuminado.
 Las reglas viven en `ScalingRules`, en Kotlin puro, con test de regresión.
+**Revisión del 2026-09-24:** con el tope en 1,3× Mariano reportó que seguían viéndose mal, ahora
+"desenfocadas" en lugar de pixeladas, y con el efecto Ken Burns tanto encendido como apagado.
+Era el propio escalado: ampliar suaviza en vez de mostrar píxeles grandes, pero la imagen queda
+blanda igual. El tope baja a **1,0×**: no se amplía nunca.
 
 ### ADR-012 — Los valores por defecto se persisten al primer arranque
 **Estado:** Aceptado · **2026-09-17**

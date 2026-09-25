@@ -68,7 +68,7 @@
             android:shadowDy="2"
             android:shadowRadius="6"
             android:textColor="@android:color/white"
-            android:textSize="44sp"
+            android:textSize="34sp"
             tools:ignore="SpUsage" />
 
         <TextView
@@ -80,7 +80,7 @@
             android:shadowDy="2"
             android:shadowRadius="6"
             android:textColor="@android:color/white"
-            android:textSize="16sp" />
+            android:textSize="14sp" />
     </LinearLayout>
 
     <TextView
@@ -95,7 +95,7 @@
         android:shadowDy="2"
         android:shadowRadius="6"
         android:textColor="@android:color/white"
-        android:textSize="15sp"
+        android:textSize="22sp"
         android:visibility="gone" />
 
     <TextView
