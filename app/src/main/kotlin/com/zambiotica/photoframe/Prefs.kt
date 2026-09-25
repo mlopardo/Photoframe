@@ -20,6 +20,8 @@ object Prefs {
     const val KEY_CLOCK = "clock"
     const val KEY_CLOCK_POSITION = "clock_position"
     const val KEY_PHOTO_DATE = "photo_date"
+    const val KEY_PHOTO_PLACE = "photo_place"
+    const val KEY_DIAGNOSTICS = "diagnostics"
     const val KEY_ORIENTATION = "orientation"
     const val KEY_AUTOSTART = "autostart"
 
@@ -51,6 +53,11 @@ object Prefs {
     fun clock(context: Context): Boolean = sp(context).getBoolean(KEY_CLOCK, true)
 
     fun photoDate(context: Context): Boolean = sp(context).getBoolean(KEY_PHOTO_DATE, true)
+
+    fun photoPlace(context: Context): Boolean = sp(context).getBoolean(KEY_PHOTO_PLACE, true)
+
+    /** Modo diagnóstico: muestra en pantalla el tamaño real de cada foto y la escala aplicada. */
+    fun diagnostics(context: Context): Boolean = sp(context).getBoolean(KEY_DIAGNOSTICS, false)
 
     fun clockPosition(context: Context): String =
         sp(context).getString(KEY_CLOCK_POSITION, "bottom_end") ?: "bottom_end"

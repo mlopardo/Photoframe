@@ -19,6 +19,10 @@ The app reads image files from a folder you choose on your device, using the And
 folder picker, or from the default folder `/sdcard/Portarretrato/`. Photos are displayed on
 screen only. They are never copied, uploaded or modified.
 
+The app reads the date and location tags stored inside your photos to show them on screen. That
+happens entirely on your device: the location is matched against a list of cities bundled with
+the app, and nothing is ever sent anywhere.
+
 ## Permissions
 
 | Permission | Why |
@@ -60,6 +64,10 @@ Zambiotica (Mariano Lopardo), Argentina.
 La app lee archivos de imagen de la carpeta que elijas con el selector del sistema, o de la
 carpeta `/sdcard/Portarretrato/`. Las fotos solo se muestran en pantalla: nunca se copian, se
 suben ni se modifican.
+
+La app lee la fecha y la ubicación guardadas dentro de tus fotos para mostrarlas en pantalla.
+Todo ocurre en tu dispositivo: la ubicación se compara contra una lista de ciudades incluida en
+la app, y no se envía nada a ningún lado.
 
 ## Permisos
 

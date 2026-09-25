@@ -70,6 +70,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var controls: View
     private lateinit var messageText: TextView
     private lateinit var photoDateText: TextView
+    private lateinit var diagnosticsText: TextView
+    private lateinit var root: View
 
     private var photos: List<Uri> = emptyList()
     private var fingerprint: String = ""
@@ -120,12 +122,14 @@ class MainActivity : AppCompatActivity() {
         controls = findViewById(R.id.controls)
         messageText = findViewById(R.id.message_text)
         photoDateText = findViewById(R.id.photo_date_text)
+        diagnosticsText = findViewById(R.id.diagnostics_text)
+        root = findViewById(R.id.root)
 
         findViewById<View>(R.id.button_previous).setOnClickListener { showNext(forward = false) }
         findViewById<View>(R.id.button_next).setOnClickListener { showNext(forward = true) }
         findViewById<View>(R.id.button_play_pause).setOnClickListener { togglePause() }
 
-        findViewById<View>(R.id.root).setOnTouchListener { _, event -> handleTouch(event) }
+        root.setOnTouchListener { _, event -> handleTouch(event) }
 
         handleReload(intent)
     }
@@ -246,18 +250,33 @@ class MainActivity : AppCompatActivity() {
         val uri = photos[index]
 
         scope.launch {
-            val width = resources.displayMetrics.widthPixels
-            val height = resources.displayMetrics.heightPixels
+            val width = frameWidth()
+            val height = frameHeight()
             val lowMemory = Prefs.isLowMemoryDevice(this@MainActivity)
-            val bitmap = withContext(Dispatchers.IO) {
-                PhotoDecoder.decode(this@MainActivity, uri, width, height, lowMemory)
+            // Con Ken Burns se decodifica un poco más grande que el marco: el zoom necesita
+            // píxeles de sobra, si no termina ampliando lo que ya estaba al límite.
+            val margin = if (Prefs.kenBurns(this@MainActivity)) ScalingRules.KEN_BURNS_MIN_RATIO else 1f
+            val decoded = withContext(Dispatchers.IO) {
+                PhotoDecoder.decode(
+                    this@MainActivity,
+                    uri,
+                    (width * margin).toInt(),
+                    (height * margin).toInt(),
+                    lowMemory
+                )
             }
-            if (bitmap == null) {
+            if (decoded == null) {
                 scheduleNext()
                 return@launch
             }
+            val bitmap = decoded.bitmap
             val takenAt = if (Prefs.photoDate(this@MainActivity)) {
                 withContext(Dispatchers.IO) { PhotoDecoder.readTakenAt(this@MainActivity, uri) }
+            } else {
+                null
+            }
+            val place = if (Prefs.photoPlace(this@MainActivity)) {
+                withContext(Dispatchers.IO) { lookUpPlace(uri) }
             } else {
                 null
             }
@@ -267,19 +286,22 @@ class MainActivity : AppCompatActivity() {
             } else {
                 null
             }
-            display(bitmap, background, scaleMode, takenAt)
+            display(decoded, background, scaleMode, takenAt, place, uri)
             scheduleNext()
         }
     }
 
     private fun display(
-        bitmap: Bitmap,
+        decoded: PhotoDecoder.Decoded,
         background: Bitmap?,
         scaleMode: String,
-        takenAt: ExifDates.TakenAt?
+        takenAt: ExifDates.TakenAt?,
+        place: GeoCities.Place?,
+        uri: Uri
     ) {
-        showPhotoDate(takenAt)
+        showPhotoCaption(takenAt, place)
 
+        val bitmap = decoded.bitmap
         val incomingSlot = if (frontIsA) slotB else slotA
         val incomingPhoto = if (frontIsA) photoB else photoA
         val incomingBackground = if (frontIsA) backgroundB else backgroundA
@@ -291,13 +313,13 @@ class MainActivity : AppCompatActivity() {
         incomingPhoto.translationX = 0f
         incomingPhoto.translationY = 0f
 
-        val screenWidth = resources.displayMetrics.widthPixels
-        val screenHeight = resources.displayMetrics.heightPixels
+        val screenWidth = frameWidth()
+        val screenHeight = frameHeight()
         if (scaleMode == "crop") {
             incomingPhoto.scaleType = ImageView.ScaleType.CENTER_CROP
         } else {
-            // Encaja la foto, pero sin agrandarla mas alla del tope: una foto de baja
-            // resolucion se ve nitida y mas chica, con el fondo difuminado alrededor.
+            // El bitmap ya viene reducido al tamaño del marco (ver PhotoDecoder.decode),
+            // así que acá solo se centra: se dibuja 1:1, sin reescalar en la GPU.
             val scale = ScalingRules.displayScale(bitmap.width, bitmap.height, screenWidth, screenHeight)
             val matrix = Matrix().apply {
                 setScale(scale, scale)
@@ -331,11 +353,17 @@ class MainActivity : AppCompatActivity() {
         }
         frontIsA = !frontIsA
 
-        // El zoom solo se aplica a fotos con resolucion de sobra: en una foto chica,
-        // agrandarla un 8% mas solo agranda los pixeles.
-        val hasPixelsToSpare =
-            ScalingRules.allowsKenBurns(bitmap.width, bitmap.height, screenWidth, screenHeight)
+        // El zoom solo se aplica a fotos con resolución de sobra en el ARCHIVO original: el
+        // bitmap ya viene ajustado al marco, así que mirarlo a él no diría nada.
+        val hasPixelsToSpare = ScalingRules.allowsKenBurns(
+            decoded.sourceWidth,
+            decoded.sourceHeight,
+            screenWidth,
+            screenHeight
+        )
         if (Prefs.kenBurns(this) && hasPixelsToSpare) startKenBurns(incomingPhoto)
+
+        showDiagnostics(decoded, uri, screenWidth, screenHeight, scaleMode, takenAt, place)
     }
 
     /** Zoom y paneo suaves. Se animan las propiedades de la vista: no se vuelve a dibujar el bitmap. */
@@ -419,19 +447,26 @@ class MainActivity : AppCompatActivity() {
     private val hideControls = Runnable { controls.visibility = View.GONE }
 
     /**
-     * Fecha de captura, leída del EXIF de la propia foto. Si la foto no la trae —típico de
-     * imágenes reenviadas o editadas— no se muestra nada, en vez de inventar una fecha.
+     * Pie de foto: fecha de captura y lugar, los dos leídos de la propia foto. Si la foto no
+     * los trae —típico de imágenes reenviadas o editadas— no se muestra nada, en vez de inventar.
      */
-    private fun showPhotoDate(takenAt: ExifDates.TakenAt?) {
-        if (takenAt == null || !Prefs.photoDate(this)) {
+    private fun showPhotoCaption(takenAt: ExifDates.TakenAt?, place: GeoCities.Place?) {
+        val lines = ArrayList<String>(2)
+        if (takenAt != null && Prefs.photoDate(this)) {
+            val calendar = Calendar.getInstance().apply {
+                clear()
+                set(takenAt.year, takenAt.month - 1, takenAt.day)
+            }
+            lines.add(SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(calendar.time))
+        }
+        if (place != null && Prefs.photoPlace(this)) {
+            lines.add("${place.city}, ${place.region}")
+        }
+        if (lines.isEmpty()) {
             photoDateText.visibility = View.GONE
             return
         }
-        val calendar = Calendar.getInstance().apply {
-            clear()
-            set(takenAt.year, takenAt.month - 1, takenAt.day)
-        }
-        photoDateText.text = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(calendar.time)
+        photoDateText.text = lines.joinToString("\n")
 
         val params = photoDateText.layoutParams as FrameLayout.LayoutParams
         params.gravity = when (OverlayRules.photoDateGravity(Prefs.clockPosition(this))) {
@@ -441,6 +476,54 @@ class MainActivity : AppCompatActivity() {
         photoDateText.layoutParams = params
         photoDateText.visibility = View.VISIBLE
     }
+
+    /** Ciudad más cercana al geotag de la foto. Sin red: usa la lista incluida en la app. */
+    private fun lookUpPlace(uri: Uri): GeoCities.Place? {
+        val coordinates = PhotoDecoder.readLatLong(this, uri) ?: return null
+        val cities = GeoCities.get(this) ?: return null
+        return cities.nearest(coordinates[0], coordinates[1])
+    }
+
+    /**
+     * Modo diagnóstico (apagado por defecto): muestra de dónde sale lo que se ve en pantalla.
+     * Sirve para distinguir una foto que la app achicó mal de una foto que ya venía movida.
+     */
+    private fun showDiagnostics(
+        decoded: PhotoDecoder.Decoded,
+        uri: Uri,
+        frameWidth: Int,
+        frameHeight: Int,
+        scaleMode: String,
+        takenAt: ExifDates.TakenAt?,
+        place: GeoCities.Place?
+    ) {
+        if (!Prefs.diagnostics(this)) {
+            diagnosticsText.visibility = View.GONE
+            return
+        }
+        val bitmap = decoded.bitmap
+        val name = uri.lastPathSegment?.substringAfterLast('/') ?: "?"
+        val megapixels = decoded.sourceWidth.toLong() * decoded.sourceHeight / 1_000_000.0
+        diagnosticsText.text = buildString {
+            append(name).append('\n')
+            append("archivo       ${decoded.sourceWidth}x${decoded.sourceHeight}")
+            append("  (${String.format(Locale.US, "%.1f", megapixels)} MP)\n")
+            append("submuestreo   1/${decoded.sampleSize}\n")
+            append("en pantalla   ${bitmap.width}x${bitmap.height}\n")
+            append("marco         ${frameWidth}x${frameHeight}\n")
+            append("ajuste        $scaleMode\n")
+            append("fecha         ${takenAt?.let { "${it.day}/${it.month}/${it.year}" } ?: "sin EXIF"}\n")
+            append("lugar         ${place?.let { "${it.city}, ${it.region}" } ?: "sin geotag"}")
+        }
+        diagnosticsText.visibility = View.VISIBLE
+    }
+
+    /** Ancho real del marco. `displayMetrics` puede no incluir la barra de navegación. */
+    private fun frameWidth(): Int =
+        if (root.width > 0) root.width else resources.displayMetrics.widthPixels
+
+    private fun frameHeight(): Int =
+        if (root.height > 0) root.height else resources.displayMetrics.heightPixels
 
     private fun applyClockSettings() {
         if (!Prefs.clock(this)) {

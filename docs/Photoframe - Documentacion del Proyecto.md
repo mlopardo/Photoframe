@@ -7,7 +7,7 @@
 | **Licencia** | GPL-3.0 · repo público `mlopardo/Photoframe` |
 | **SDK** | `minSdk 25` · `compileSdk` / `targetSdk 36` |
 | **Estado** | M1 — probado en la TabZambiótica el 2026-09-17; v0.1.1 corrige lo observado |
-| **Versión del documento** | 0.1.4 |
+| **Versión del documento** | 0.2.0 |
 | **Última actualización** | 2026-09-17 |
 | **Líder técnico** | Apu (asesor Android) + Mariano |
 
@@ -202,6 +202,49 @@ propósito— o bien una **base de ciudades offline** (GeoNames, ~2–4 MB en el
 del punto más cercano. Antes de sumar ese peso hay que medir **cuántas fotos conservan el
 geotag**: las reenviadas por mensajería suelen tenerlo borrado. Detalle acordado: ciudad y
 provincia, nunca la dirección exacta.
+
+### ADR-015 — La foto se reduce al tamaño del marco antes de dibujarla
+**Estado:** Aceptado · **2026-09-25**
+`PhotoDecoder` ya no devuelve el bitmap submuestreado tal cual: lo reduce al tamaño exacto del
+marco con `createScaledBitmap` (filtrado), y la matriz de la vista solo lo centra.
+**Motivo:** `inSampleSize` únicamente divide por potencias de 2, así que una foto de 15 MP queda
+en 2500 px de ancho. La Galaxy Tab 2 tiene una GPU Mali-400, cuyo límite de textura es **2048 px
+por lado**: por encima de eso Android no puede subir la imagen a la GPU y la dibuja degradada.
+Eso explica el "desenfoque" que aparecía **solo en algunas fotos** (las más grandes) y **con el
+efecto Ken Burns encendido o apagado**, que era el dato que descartaba cualquier explicación
+basada en el zoom.
+**Consecuencia:** menos memoria, dibujo 1:1 y nada que dependa del tamaño máximo de textura.
+Cuando Ken Burns está activo se decodifica un 10% más grande que el marco, para que el zoom
+tenga píxeles de sobra.
+
+### ADR-016 — Ubicación de la foto con una lista de ciudades incluida en la app
+**Estado:** Aceptado · **2026-09-25**
+El geotag se lee del EXIF y se traduce a "Ciudad, Provincia" (o "Ciudad, País" fuera de
+Argentina) con `assets/ciudades.bin`: 171.075 ciudades, 4,1 MB, generado por `tools/build_geo.py`.
+**Motivo:** `Geocoder` de Android necesita red y servicios de Google; la Tab corre LineageOS sin
+ellos, y la app no pide permiso de `INTERNET` a propósito (ADR-005). La lista offline conserva
+las dos cosas: funciona en la Tab y mantiene el "no recopila datos".
+**Detalles:** el archivo está ordenado por latitud, así que la búsqueda recorre solo la franja
+cercana (0,06 ms medidos). Si la ciudad más cercana está a más de 60 km, no se muestra nada.
+**Verificación:** el mapeo de provincias argentinas se valida contra 24 ciudades de control al
+generar el archivo —la primera versión estaba corrida y el control lo detectó—, y un test del CI
+comprueba lugares conocidos contra el archivo que viaja en el APK.
+
+### ADR-017 — Firma estable con la clave fuera del repositorio
+**Estado:** Aceptado · **2026-09-25**
+El APK se firma siempre con la misma clave, que llega al CI como secreto de GitHub y a la
+máquina de desarrollo por `keystore.properties`. Sin ninguna de las dos, el build usa la firma
+de depuración y sigue funcionando.
+**Motivo:** cada corrida del CI generaba su propia clave de depuración, así que actualizar en la
+tablet fallaba con `INSTALL_FAILED_UPDATE_INCOMPATIBLE` y obligaba a desinstalar.
+**Procedimiento completo, con el esquema de respaldo:** `docs/firma-y-keystore.md`.
+
+### ADR-018 — Modo diagnóstico en pantalla
+**Estado:** Aceptado · **2026-09-25**
+Un ajuste apagado por defecto muestra, sobre la foto, el tamaño del archivo original, el
+submuestreo aplicado, el tamaño en pantalla y si la foto trae fecha y geotag.
+**Motivo:** dos versiones seguidas se fueron en diagnosticar a ojo un problema de imagen. Que la
+app diga de dónde sale lo que se ve convierte una discusión en un dato.
 
 ## 6. Plan por milestones
 

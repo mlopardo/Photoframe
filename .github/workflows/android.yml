@@ -28,14 +28,43 @@ jobs:
       - name: Hacer ejecutable el wrapper
         run: chmod +x ./gradlew
 
+      # La clave de firma llega como secreto (keystore en base64) y se escribe en un archivo
+      # temporal del runner, fuera del repositorio. Si el secreto no existe (por ejemplo en un
+      # fork), el build sigue con la firma de depuracion.
+      - name: Preparar la clave de firma
+        env:
+          KEYSTORE_BASE64: ${{ secrets.PHOTOFRAME_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "Sin secreto de firma: se usara la clave de depuracion del runner."
+            exit 0
+          fi
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/photoframe.jks"
+          echo "PHOTOFRAME_KEYSTORE_FILE=$RUNNER_TEMP/photoframe.jks" >> "$GITHUB_ENV"
+          echo "Clave de firma preparada (queda solo en el runner, nunca en el repositorio)."
+
       - name: Tests unitarios
         run: ./gradlew testDebugUnitTest
+        env:
+          PHOTOFRAME_KEYSTORE_PASSWORD: ${{ secrets.PHOTOFRAME_KEYSTORE_PASSWORD }}
+          PHOTOFRAME_KEY_ALIAS: ${{ secrets.PHOTOFRAME_KEY_ALIAS }}
+          PHOTOFRAME_KEY_PASSWORD: ${{ secrets.PHOTOFRAME_KEY_PASSWORD }}
 
       - name: Lint
         run: ./gradlew lintDebug
 
       - name: Build APK debug
         run: ./gradlew assembleDebug -PversionCode=${{ github.run_number }}
+        env:
+          PHOTOFRAME_KEYSTORE_PASSWORD: ${{ secrets.PHOTOFRAME_KEYSTORE_PASSWORD }}
+          PHOTOFRAME_KEY_ALIAS: ${{ secrets.PHOTOFRAME_KEY_ALIAS }}
+          PHOTOFRAME_KEY_PASSWORD: ${{ secrets.PHOTOFRAME_KEY_PASSWORD }}
+
+      - name: Verificar quien firmo el APK
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$APK" | grep -i "Signer #1 certificate DN" || true
 
       - name: Publicar APK
         uses: actions/upload-artifact@v4

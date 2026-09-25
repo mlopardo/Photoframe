@@ -20,6 +20,11 @@
     <string name="pref_clock">Show clock and date</string>
     <string name="pref_photo_date">Show the date each photo was taken</string>
     <string name="pref_photo_date_summary">Read from the photo itself; hidden when the photo does not carry it</string>
+    <string name="pref_photo_place">Show where the photo was taken</string>
+    <string name="pref_photo_place_summary">Read from the location tag in the photo, using a list of cities bundled with the app. No internet access.</string>
+    <string name="pref_cat_advanced">Advanced</string>
+    <string name="pref_diagnostics">Diagnostics overlay</string>
+    <string name="pref_diagnostics_summary">Shows the real size of each photo and the scale applied. For troubleshooting.</string>
     <string name="pref_clock_position">Clock position</string>
     <string name="pref_orientation">Screen orientation</string>
     <string name="pref_autostart">Start after device reboot</string>

@@ -23,7 +23,25 @@ object PhotoDecoder {
     /** Cuánto se oscurece el fondo para que la foto de adelante resalte (0 = negro, 1 = sin tocar). */
     private const val BACKGROUND_DIM = 0.55f
 
-    fun decode(context: Context, uri: Uri, reqWidth: Int, reqHeight: Int, lowMemory: Boolean): Bitmap? {
+    /** Foto lista para dibujar, más los datos del archivo original (para el diagnóstico). */
+    data class Decoded(
+        val bitmap: Bitmap,
+        val sourceWidth: Int,
+        val sourceHeight: Int,
+        val sampleSize: Int
+    )
+
+    /**
+     * Decodifica la foto y la deja **exactamente** en el tamaño en que se va a ver.
+     *
+     * `inSampleSize` solo divide por potencias de 2, así que por sí solo deja bitmaps más
+     * grandes que la pantalla: una foto de 15 MP queda en 2500 px de ancho. En la Galaxy Tab 2
+     * (GPU Mali-400) el máximo de textura es 2048 px por lado: por encima de eso Android no
+     * puede subir la imagen a la GPU y la dibuja degradada, que es el "desenfoque" que apareció
+     * solo en algunas fotos —las más grandes— y con el efecto Ken Burns tanto encendido como
+     * apagado. Reducir acá, con filtrado, evita el problema, baja la memoria y dibuja 1:1.
+     */
+    fun decode(context: Context, uri: Uri, reqWidth: Int, reqHeight: Int, lowMemory: Boolean): Decoded? {
         if (reqWidth <= 0 || reqHeight <= 0) return null
         return try {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -39,7 +57,9 @@ object PhotoDecoder {
             } ?: return null
 
             val rotation = readRotation(context, uri)
-            if (rotation == 0) bitmap else rotate(bitmap, rotation)
+            val upright = if (rotation == 0) bitmap else rotate(bitmap, rotation)
+            val fitted = fitToFrame(upright, reqWidth, reqHeight)
+            Decoded(fitted, bounds.outWidth, bounds.outHeight, options.inSampleSize)
         } catch (e: Exception) {
             null
         } catch (e: OutOfMemoryError) {
@@ -134,6 +154,31 @@ object PhotoDecoder {
             val exif = ExifInterface(stream)
             ExifDates.parse(exif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL))
                 ?: ExifDates.parse(exif.getAttribute(ExifInterface.TAG_DATETIME))
+        }
+    } catch (e: Exception) {
+        null
+    }
+
+    /** Reduce el bitmap al tamaño exacto en que se va a ver. Nunca lo agranda. */
+    private fun fitToFrame(bitmap: Bitmap, frameWidth: Int, frameHeight: Int): Bitmap {
+        val scale = ScalingRules.displayScale(bitmap.width, bitmap.height, frameWidth, frameHeight)
+        if (scale >= 1f) return bitmap
+        val width = (bitmap.width * scale).toInt().coerceAtLeast(1)
+        val height = (bitmap.height * scale).toInt().coerceAtLeast(1)
+        return try {
+            val scaled = Bitmap.createScaledBitmap(bitmap, width, height, true)
+            if (scaled !== bitmap) bitmap.recycle()
+            scaled
+        } catch (e: OutOfMemoryError) {
+            bitmap
+        }
+    }
+
+    /** Coordenadas del geotag, o null si la foto no las trae. */
+    fun readLatLong(context: Context, uri: Uri): DoubleArray? = try {
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            val coordinates = DoubleArray(2)
+            if (ExifInterface(stream).getLatLong(coordinates)) coordinates else null
         }
     } catch (e: Exception) {
         null

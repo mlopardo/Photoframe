@@ -9,6 +9,7 @@ gradlew text eol=lf
 
 # Binarios que no deben tocarse.
 *.jar binary
+*.bin binary
 *.png binary
 *.jpg binary
 *.webp binary

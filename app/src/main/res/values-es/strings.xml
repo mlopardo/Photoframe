@@ -20,6 +20,11 @@
     <string name="pref_clock">Mostrar reloj y fecha</string>
     <string name="pref_photo_date">Mostrar la fecha en que se tomó la foto</string>
     <string name="pref_photo_date_summary">Se lee de la propia foto; si no la trae, no se muestra nada</string>
+    <string name="pref_photo_place">Mostrar dónde se tomó la foto</string>
+    <string name="pref_photo_place_summary">Se lee del geotag de la foto, con una lista de ciudades incluida en la app. Sin acceso a internet.</string>
+    <string name="pref_cat_advanced">Avanzado</string>
+    <string name="pref_diagnostics">Datos técnicos en pantalla</string>
+    <string name="pref_diagnostics_summary">Muestra el tamaño real de cada foto y la escala aplicada. Para diagnosticar problemas.</string>
     <string name="pref_clock_position">Posición del reloj</string>
     <string name="pref_orientation">Orientación de la pantalla</string>
     <string name="pref_autostart">Arrancar después de reiniciar el equipo</string>

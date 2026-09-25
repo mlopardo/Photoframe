@@ -66,6 +66,12 @@
             app:summary="@string/pref_photo_date_summary"
             app:title="@string/pref_photo_date" />
 
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="photo_place"
+            app:summary="@string/pref_photo_place_summary"
+            app:title="@string/pref_photo_place" />
+
         <ListPreference
             app:defaultValue="bottom_end"
             app:entries="@array/clock_position_entries"
@@ -86,5 +92,13 @@
             app:defaultValue="true"
             app:key="autostart"
             app:title="@string/pref_autostart" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/pref_cat_advanced">
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="diagnostics"
+            app:summary="@string/pref_diagnostics_summary"
+            app:title="@string/pref_diagnostics" />
     </PreferenceCategory>
 </PreferenceScreen>

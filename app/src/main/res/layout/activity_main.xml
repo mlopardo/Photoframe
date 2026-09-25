@@ -99,6 +99,19 @@
         android:visibility="gone" />
 
     <TextView
+        android:id="@+id/diagnostics_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="16dp"
+        android:background="#99000000"
+        android:fontFamily="monospace"
+        android:padding="6dp"
+        android:textColor="#7FFF7F"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
+    <TextView
         android:id="@+id/message_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

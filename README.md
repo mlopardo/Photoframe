@@ -18,6 +18,9 @@ fundido, reloj y control remoto por ADB. Pensado para darle una segunda vida a u
 - Reloj y fecha superpuestos, con posición configurable.
 - **Fecha en que se tomó cada foto**, leída del EXIF de la propia imagen. Si la foto no la trae,
   no se muestra nada. Sin red y sin permisos extra.
+- **Dónde se tomó cada foto**: el geotag se traduce a "Ciudad, Provincia" con una lista de
+  171.075 ciudades incluida en la app. **Sin conexión a internet y sin permiso de red.**
+- **Modo diagnóstico** opcional: muestra el tamaño real de cada foto y la escala aplicada.
 - La pantalla se mantiene encendida mientras la app está al frente; con la pantalla apagada el
   pase se detiene, para no gastar batería.
 - Arranque automático después de reiniciar el equipo (hasta Android 9; ver más abajo).
