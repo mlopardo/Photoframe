@@ -174,11 +174,22 @@ object PhotoDecoder {
         }
     }
 
-    /** Coordenadas del geotag, o null si la foto no las trae. */
+    /**
+     * Coordenadas del geotag, o null si la foto no las trae.
+     *
+     * La sobrecarga de ExifInterface que llena un arreglo trabaja con `FloatArray`, no con
+     * `DoubleArray`. La precision de un float alcanza de sobra: ~7 digitos significativos son
+     * menos de 2 metros de error en latitud, y aca solo se usa para buscar la ciudad mas cercana
+     * dentro de un radio de 60 km.
+     */
     fun readLatLong(context: Context, uri: Uri): DoubleArray? = try {
         context.contentResolver.openInputStream(uri)?.use { stream ->
-            val coordinates = DoubleArray(2)
-            if (ExifInterface(stream).getLatLong(coordinates)) coordinates else null
+            val coordinates = FloatArray(2)
+            if (ExifInterface(stream).getLatLong(coordinates)) {
+                doubleArrayOf(coordinates[0].toDouble(), coordinates[1].toDouble())
+            } else {
+                null
+            }
         }
     } catch (e: Exception) {
         null
