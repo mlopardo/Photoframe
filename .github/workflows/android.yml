@@ -63,10 +63,30 @@ jobs:
           PHOTOFRAME_KEY_ALIAS: ${{ secrets.PHOTOFRAME_KEY_ALIAS }}
           PHOTOFRAME_KEY_PASSWORD: ${{ secrets.PHOTOFRAME_KEY_PASSWORD }}
 
+      # No alcanza con imprimir el certificado: si el APK saliera firmado con otra clave, la
+      # tablet pediria desinstalar y Play rechazaria la subida. Por eso el paso COMPARA la huella
+      # con la esperada y corta el build si no coincide. La huella es informacion publica.
       - name: Verificar quien firmo el APK
+        env:
+          HUELLA_ESPERADA: 9bdf3e294cf726ca7b24851091973110fca30a1c2ab6602c8c6090df30ffe203
         run: |
+          set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
-          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$APK" | grep -i "Signer #1 certificate DN" || true
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort | tail -n 1)
+          "$APKSIGNER" verify --print-certs "$APK" | tee certs.txt
+          if [ -z "${PHOTOFRAME_KEYSTORE_FILE:-}" ]; then
+            echo "Sin secreto de firma (fork o secreto ausente): se firmo con la clave de"
+            echo "depuracion del runner. No hay nada que comparar."
+            exit 0
+          fi
+          HUELLA=$(grep -i "Signer #1 certificate SHA-256 digest" certs.txt | awk '{print $NF}' | tr 'A-Z' 'a-z')
+          if [ "$HUELLA" != "$HUELLA_ESPERADA" ]; then
+            echo "::error::El APK NO esta firmado con la clave de Photoframe."
+            echo "  esperada: $HUELLA_ESPERADA"
+            echo "  obtenida: ${HUELLA:-<no se pudo leer>}"
+            exit 1
+          fi
+          echo "Firma correcta: $HUELLA"
 
       - name: Publicar APK
         uses: actions/upload-artifact@v4
