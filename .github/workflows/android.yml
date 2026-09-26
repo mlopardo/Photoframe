@@ -79,14 +79,19 @@ jobs:
             echo "depuracion del runner. No hay nada que comparar."
             exit 0
           fi
-          HUELLA=$(grep -i "Signer #1 certificate SHA-256 digest" certs.txt | awk '{print $NF}' | tr 'A-Z' 'a-z')
-          if [ "$HUELLA" != "$HUELLA_ESPERADA" ]; then
-            echo "::error::El APK NO esta firmado con la clave de Photoframe."
+          # apksigner rotula distinto segun el esquema de firma: "Signer #1 certificate ..."
+          # para el v1 (JAR) y "V2 Signer: certificate ..." / "V3 Signer: ..." para los nuevos.
+          # Por eso se buscan todas las lineas de huella y se exige que quede una sola, la nuestra.
+          HUELLAS=$(grep -i "certificate SHA-256 digest" certs.txt | awk '{print $NF}' | tr 'A-Z' 'a-z' | sort -u || true)
+          CUANTAS=$(printf '%s' "$HUELLAS" | grep -c . || true)
+          if [ "$CUANTAS" != "1" ] || [ "$HUELLAS" != "$HUELLA_ESPERADA" ]; then
+            echo "::error::El APK NO esta firmado (solo) con la clave de Photoframe."
             echo "  esperada: $HUELLA_ESPERADA"
-            echo "  obtenida: ${HUELLA:-<no se pudo leer>}"
+            echo "  obtenidas:"
+            echo "${HUELLAS:-<ninguna huella en la salida de apksigner>}"
             exit 1
           fi
-          echo "Firma correcta: $HUELLA"
+          echo "Firma correcta: $HUELLAS"
 
       - name: Publicar APK
         uses: actions/upload-artifact@v4
